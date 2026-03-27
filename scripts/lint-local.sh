@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+repo_root="$(cd "${script_dir}/.." && pwd)"
+
+cd "${repo_root}"
+
+for file in scripts/*.sh; do
+  bash -n "${file}"
+done
+
+if command -v shellcheck >/dev/null 2>&1; then
+  shellcheck scripts/*.sh
+fi
+
+python3 -m json.tool .devcontainer/devcontainer.json >/dev/null
+
+yamllint_bin=""
+user_base="$(python3 - <<'PY'
+import site
+print(site.USER_BASE)
+PY
+)"
+
+for candidate in \
+  "${user_base}/bin/yamllint" \
+  "${HOME}/.local/bin/yamllint" \
+  "$(command -v yamllint 2>/dev/null || true)"; do
+  if [[ -n "${candidate}" && -x "${candidate}" ]]; then
+    yamllint_bin="${candidate}"
+    break
+  fi
+done
+
+if [[ -n "${yamllint_bin}" ]]; then
+  "${yamllint_bin}" .
+else
+  printf '%s\n' "yamllint not found; skipping YAML lint." >&2
+fi
+
+if command -v npx >/dev/null 2>&1; then
+  npx --yes markdownlint-cli@0.39 $(git ls-files '*.md')
+else
+  printf '%s\n' "npx not found; skipping Markdown lint." >&2
+fi
+
+if command -v actionlint >/dev/null 2>&1; then
+  actionlint
+fi
+
+printf '%s\n' "Local lint checks completed."

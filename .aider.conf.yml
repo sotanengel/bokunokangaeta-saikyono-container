@@ -1,0 +1,8 @@
+read:
+  - AGENTS.md
+  - docs/design-philosophy.md
+  - docs/security-model.md
+auto-commits: false
+dirty-commits: false
+attribute-author: false
+attribute-committer: false

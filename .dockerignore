@@ -1,0 +1,12 @@
+.git
+.github
+.cursor
+.devcontainer
+.sandbox
+.env
+.env.*
+dist
+tmp
+*.log
+__pycache__
+.DS_Store

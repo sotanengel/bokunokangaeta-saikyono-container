@@ -1,0 +1,12 @@
+---
+description: Secure AI sandbox project rules
+globs:
+  - "**/*"
+alwaysApply: true
+---
+
+- Read `AGENTS.md` before changing files.
+- Preserve an OCI-compatible, Podman/Docker-friendly layout.
+- Default to offline execution and explicit verification.
+- Keep root filesystem immutable at runtime and use `.sandbox/home` for writable user state.
+- Add or update docs whenever the security model or agent support changes.

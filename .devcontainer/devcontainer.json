@@ -1,0 +1,33 @@
+{
+  "name": "ai-agent-sandbox",
+  "build": {
+    "context": "..",
+    "dockerfile": "../Containerfile"
+  },
+  "remoteUser": "agent",
+  "workspaceFolder": "/workspace",
+  "mounts": [
+    "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached"
+  ],
+  "runArgs": [
+    "--cap-drop=ALL",
+    "--security-opt=no-new-privileges",
+    "--pids-limit=512",
+    "--tmpfs=/tmp:rw,nosuid,nodev,noexec,size=1073741824",
+    "--tmpfs=/var/tmp:rw,nosuid,nodev,noexec,size=268435456"
+  ],
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "editor.formatOnSave": true
+      },
+      "extensions": [
+        "github.copilot",
+        "github.copilot-chat",
+        "ms-azuretools.vscode-docker",
+        "ms-vscode-remote.remote-containers"
+      ]
+    }
+  }
+}

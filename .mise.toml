@@ -1,0 +1,9 @@
+[tools]
+node = "22"
+python = "3.12"
+go = "1.24"
+rust = "stable"
+java = "21"
+ruby = "3.4"
+bun = "1"
+deno = "2"

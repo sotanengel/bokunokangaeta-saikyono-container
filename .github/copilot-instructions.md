@@ -1,0 +1,7 @@
+# GitHub Copilot Instructions
+
+- Read `AGENTS.md` before proposing edits.
+- Keep this repository OCI-compatible and Podman/Docker-friendly.
+- Prefer `scripts/run-sandbox.sh` over ad-hoc container invocations.
+- Default to offline execution. Only enable network for explicit bootstrap work.
+- Preserve the runtime security flags and update docs when changing them.

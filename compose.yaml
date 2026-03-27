@@ -1,0 +1,39 @@
+x-sandbox-base: &sandbox-base
+  build:
+    context: .
+    dockerfile: Containerfile
+  image: ai-agent-sandbox:latest
+  working_dir: /workspace
+  user: agent
+  init: true
+  read_only: true
+  stdin_open: true
+  tty: true
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+  pids_limit: 512
+  tmpfs:
+    - /tmp:rw,nosuid,nodev,noexec,size=1073741824
+    - /var/tmp:rw,nosuid,nodev,noexec,size=268435456
+  volumes:
+    - .:/workspace:rw
+    - ./.sandbox/home:/home/agent:rw
+  environment:
+    OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+    GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+    GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+    HTTP_PROXY: ${HTTP_PROXY:-}
+    HTTPS_PROXY: ${HTTPS_PROXY:-}
+    NO_PROXY: ${NO_PROXY:-}
+
+services:
+  sandbox:
+    <<: *sandbox-base
+    network_mode: none
+
+  sandbox-online:
+    <<: *sandbox-base
