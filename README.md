@@ -1,0 +1,2 @@
+# bokunokangaeta-saikyono-container
+生成AIを安全に活用するためのコンテナを提供するリポジトリです。
