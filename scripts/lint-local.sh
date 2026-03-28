@@ -34,7 +34,13 @@ for candidate in \
 done
 
 if [[ -n "${yamllint_bin}" ]]; then
-  "${yamllint_bin}" .
+  yaml_files=()
+  while IFS= read -r file; do
+    yaml_files+=("${file}")
+  done < <(git ls-files '*.yml' '*.yaml')
+  if [[ ${#yaml_files[@]} -gt 0 ]]; then
+    "${yamllint_bin}" "${yaml_files[@]}"
+  fi
 else
   printf '%s\n' "yamllint not found; skipping YAML lint." >&2
 fi

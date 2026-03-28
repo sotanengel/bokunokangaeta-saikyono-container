@@ -50,6 +50,10 @@ fi
 
 export MISE_CONFIG_FILE="${config_file}"
 
+if [[ -d "$(dirname "${config_file}")" ]]; then
+  cd "$(dirname "${config_file}")"
+fi
+
 case "${profile}" in
   core)
     tools=(node python go rust)
@@ -63,5 +67,10 @@ case "${profile}" in
     ;;
 esac
 
+if printf '%s\n' "${tools[@]}" | grep -qx ruby; then
+  export MISE_RUBY_COMPILE=false
+fi
+
 mise install "${tools[@]}"
+mise reshim
 mise ls --installed

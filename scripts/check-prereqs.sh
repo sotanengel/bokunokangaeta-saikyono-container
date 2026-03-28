@@ -19,6 +19,10 @@ check() {
 check "python3" python3
 check "git" git
 
+if [[ "$(uname -s)" == "Darwin" && -x "${script_dir}/check-container-engines.sh" ]]; then
+  "${script_dir}/check-container-engines.sh" || true
+fi
+
 if engine="$("${script_dir}/detect-container-engine.sh" 2>/dev/null)"; then
   printf 'ok   container-engine-cli: %s\n' "$("${engine}" --version)"
   if "${engine}" info >/dev/null 2>&1; then
@@ -27,7 +31,8 @@ if engine="$("${script_dir}/detect-container-engine.sh" 2>/dev/null)"; then
     printf 'miss container-engine-runtime (%s is installed but not ready)\n' "${engine}" >&2
     if [[ "${engine}" == "podman" && "$(uname -s)" == "Darwin" ]]; then
       printf 'hint run: ./scripts/install-host-tools-macos.sh\n' >&2
-      printf 'hint or: podman machine init --now\n' >&2
+      printf 'hint or: ./scripts/start-podman-machine-macos.sh --machine-name ${PODMAN_MACHINE_NAME:-podman-machine-default}\n' >&2
+      printf 'hint or: ./scripts/repair-podman-machine-macos.sh --machine-name ${PODMAN_MACHINE_NAME:-podman-machine-default}\n' >&2
     elif [[ "${engine}" == "docker" ]]; then
       printf 'hint start the Docker daemon or set DOCKER_HOST to a reachable API socket.\n' >&2
     fi
@@ -35,6 +40,11 @@ if engine="$("${script_dir}/detect-container-engine.sh" 2>/dev/null)"; then
   fi
 else
   printf 'miss container-engine (podman or docker)\n' >&2
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+    printf 'hint run: ./scripts/install-host-tools-macos.sh\n' >&2
+  elif [[ "$(uname -s)" == "Linux" ]]; then
+    printf 'hint run: ./scripts/install-host-tools-linux.sh\n' >&2
+  fi
   status=1
 fi
 

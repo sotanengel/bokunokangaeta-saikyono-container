@@ -17,6 +17,7 @@
 - エージェント固有の癖は薄いアダプターファイルで吸収する
 - IDE 系は `.devcontainer` とルールファイルを使う
 - CLI 系は `scripts/run-sandbox.sh` と `install-agents` を使う
+- CI では `agent-smoke-test.sh` でエージェントごとの導線を確認する
 
 ## 追加言語との相性
 

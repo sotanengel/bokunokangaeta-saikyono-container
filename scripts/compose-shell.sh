@@ -2,18 +2,25 @@
 set -euo pipefail
 
 service="sandbox"
+online="false"
+reason="compose-shell"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --online)
       service="sandbox-online"
+      online="true"
       shift
+      ;;
+    --reason)
+      reason="$2"
+      shift 2
       ;;
     -h|--help)
       cat <<'EOF'
 Usage:
   compose-shell.sh
-  compose-shell.sh --online
+  compose-shell.sh --online [--reason TEXT]
 EOF
       exit 0
       ;;
@@ -38,5 +45,44 @@ else
   exit 1
 fi
 
+if [[ "${online}" == "true" && "${reason}" == "compose-shell" ]]; then
+  printf '%s\n' "warning: online compose run requested without --reason; logging as compose-shell." >&2
+fi
+
 mkdir -p .sandbox/home
-exec "${compose_cmd[@]}" run --rm --service-ports "${service}" bash
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+workspace="$(pwd)"
+compose_engine="${compose_cmd[0]}"
+command_preview="bash"
+
+"${script_dir}/write-audit-log.sh" \
+  --event start \
+  --mode compose-run \
+  --engine "${compose_engine}" \
+  --target "${service}" \
+  --workspace "${workspace}" \
+  --online "${online}" \
+  --agent compose \
+  --reason "${reason}" \
+  --command-preview "${command_preview}" \
+  --network-mode "$([[ "${online}" == "true" ]] && printf '%s' online || printf '%s' offline)"
+
+set +e
+"${compose_cmd[@]}" run --rm "${service}" bash
+exit_code=$?
+set -e
+
+"${script_dir}/write-audit-log.sh" \
+  --event finish \
+  --mode compose-run \
+  --engine "${compose_engine}" \
+  --target "${service}" \
+  --workspace "${workspace}" \
+  --online "${online}" \
+  --agent compose \
+  --reason "${reason}" \
+  --command-preview "${command_preview}" \
+  --network-mode "$([[ "${online}" == "true" ]] && printf '%s' online || printf '%s' offline)" \
+  --exit-code "${exit_code}"
+
+exit "${exit_code}"

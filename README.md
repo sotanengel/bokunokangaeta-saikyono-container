@@ -14,13 +14,20 @@ AIエージェントに自動実装を任せるための、安全寄りなポリ
 
 ```bash
 make install-host-tools-macos
+make install-host-tools-linux
+make start-podman-machine-macos
 make doctor
+make doctor-host
+make audit-host-security
 make lint
 make build
 make shell
 make shell-online
 make bootstrap-polyglot
+make polyglot-smoke
 make install-agents
+make agent-smoke
+make export-image-artifacts
 make smoke
 ```
 
@@ -46,18 +53,41 @@ make install-host-tools-macos
 - Podman の helper binaries を `~/.local/lib/podman` に展開
 - `podman-compose` を `python3 -m pip --user` で導入
 - Docker Desktop がある場合は `docker-credential-desktop` もリンク
-- `~/.zprofile` に `PATH` と `DOCKER_HOST` の補助設定を追加
-- `podman machine init --now` でローカル実行用 VM を起動
+- `~/.zprofile` に `PATH` と動的な `DOCKER_HOST` 補助設定を追加
+- Podman machine を初期化し、guest socket と host forwarding の補修を試みてから起動
 
-`docker` は Docker Desktop ではなく Podman の API ソケットを使う構成です。`docker compose` プラグインまでは入れないため、Compose 実行は `podman-compose` か Podman Compose を使う前提です。
+自動起動が不安定な host では、次の明示起動ヘルパーを使えます。Codex などの非対話セッションで `podman machine start` がぶら下がる環境では、必要に応じて macOS のユーザーセッション側で起動を引き受けます。
+
+```bash
+make start-podman-machine-macos
+```
+
+Podman machine がホスト事情で起動しない場合でも、この installer 自体は Docker 利用を継続できる状態で完了します。Podman 側だけ後から補修したいときは次を使えます。
+
+```bash
+make start-podman-machine-macos
+make repair-podman-machine-macos
+make doctor-host
+```
+
+`docker` は Docker Desktop が ready ならそのまま使い、Docker 側が unavailable な場合だけ Podman の API ソケットへ退避できる構成です。`docker compose` プラグインまでは入れないため、Compose 実行は `podman-compose` か Podman Compose を使う前提です。
 
 ## 主な構成
 
 - `Containerfile`: 非 root ユーザー前提の OCI 互換ベースイメージ
 - `scripts/run-sandbox.sh`: オフライン既定の安全な実行ラッパー
+- `scripts/write-audit-log.sh`: コンテナ start/finish をホスト側監査ログへ記録
+- `scripts/audit-host-security.sh`: コンテナ実行権限の棚卸し
+- `scripts/polyglot-smoke-test.sh`: 多言語サンプルの実行確認
+- `scripts/agent-smoke-test.sh`: エージェントごとの導線確認
+- `scripts/export-image-artifacts.sh`: イメージ archive と checksum を出力
 - `scripts/install-agents.sh`: エージェント CLI をユーザー領域へ導入
 - `scripts/install-host-tools-macos.sh`: macOS ホストに Podman/Docker CLI を導入
+- `scripts/install-host-tools-linux.sh`: Linux ホストに Podman/Docker を導入
+- `scripts/start-podman-machine-macos.sh`: macOS のユーザーセッション側も使って Podman machine を起動
+- `scripts/repair-podman-machine-macos.sh`: macOS 上の Podman machine 定義を補修
 - `scripts/check-prereqs.sh`: ローカル前提条件の確認
+- `scripts/check-container-engines.sh`: Podman/Docker のホスト実行状態を個別に診断
 - `scripts/lint-local.sh`: ローカル静的チェック
 - `.devcontainer/devcontainer.json`: VS Code/Cursor/Copilot 向けの開発コンテナ設定
 - `compose.yaml`: Compose ベースの起動定義
@@ -70,6 +100,7 @@ make install-host-tools-macos
 - `docs/design-philosophy.md`: 設計思想
 - `docs/security-model.md`: セキュリティモデル
 - `docs/agent-compatibility.md`: 対応エージェントの整理
+- `examples/`: 各言語の最小サンプル
 
 ## セキュリティ方針
 
@@ -78,6 +109,8 @@ make install-host-tools-macos
 - `--security-opt=no-new-privileges`
 - `--read-only` の root filesystem
 - 書き込み可能なのは `workspace` とリポジトリ配下の `.sandbox/home`
+- `run-sandbox` と `compose-shell` は start/finish を host 側監査ログへ残す
+- `/` や `HOME` のような高リスクな workspace mount は既定で拒否する
 - 検証は CI とスモークテストで別系統に回す
 - 依存更新と GitHub Actions 更新は Dependabot に任せる
 
@@ -95,8 +128,16 @@ make install-host-tools-macos
 - Compose で起動: `make compose-shell`
 - Compose でオンライン起動: `make compose-shell-online`
 - 前提確認: `make doctor`
+- ホスト engine 診断: `make doctor-host`
+- ホスト権限の棚卸し: `make audit-host-security`
 - macOS ホストへエンジン導入: `make install-host-tools-macos`
+- Linux ホストへエンジン導入: `make install-host-tools-linux`
+- macOS Podman machine 起動: `make start-podman-machine-macos`
+- macOS Podman machine 補修: `make repair-podman-machine-macos`
 - ローカル静的チェック: `make lint`
+- 多言語 smoke: `make polyglot-smoke POLYGLOT_GROUP=core`
+- エージェント smoke: `make agent-smoke AGENT_SMOKE=codex`
+- archive と checksum の出力: `make export-image-artifacts`
 - 特定エージェントを起動: `make agent AGENT=codex`
 - CI 相当の最低確認: `make smoke`
 
@@ -104,5 +145,8 @@ make install-host-tools-macos
 
 - GitHub Copilot と Cursor は CLI だけでなく IDE 統合も想定しています
 - Agent CLI の導入先は root filesystem ではなく `~/.local` です
-- macOS の `docker` CLI は Podman API ソケットへ向ける前提です
+- macOS の `docker` CLI は Docker Desktop を優先し、必要時のみ Podman API ソケットへ退避します
+- 監査ログは `${XDG_STATE_HOME:-$HOME/.local/state}/ai-agent-sandbox/audit/container-runs.jsonl` に記録されます
+- ネットワークが必要な実行は `--reason` を付けて監査しやすくしてください
+- CI は多言語 smoke、エージェント smoke、SBOM 生成、checksum 署名まで回します
 - `.sandbox/` はローカル専用の作業領域として `.gitignore` しています

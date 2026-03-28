@@ -1,3 +1,7 @@
+x-sandbox-labels: &sandbox-labels
+  io.github.ai-agent-sandbox.managed: "true"
+  io.github.ai-agent-sandbox.mode: "compose"
+
 x-sandbox-base: &sandbox-base
   build:
     context: .
@@ -5,7 +9,6 @@ x-sandbox-base: &sandbox-base
   image: ai-agent-sandbox:latest
   working_dir: /workspace
   user: agent
-  init: true
   read_only: true
   stdin_open: true
   tty: true
@@ -29,11 +32,21 @@ x-sandbox-base: &sandbox-base
     HTTP_PROXY: ${HTTP_PROXY:-}
     HTTPS_PROXY: ${HTTPS_PROXY:-}
     NO_PROXY: ${NO_PROXY:-}
+  labels:
+    <<: *sandbox-labels
 
 services:
   sandbox:
     <<: *sandbox-base
     network_mode: none
+    labels:
+      <<: *sandbox-labels
+      io.github.ai-agent-sandbox.service: "sandbox"
+      io.github.ai-agent-sandbox.network: "offline"
 
   sandbox-online:
     <<: *sandbox-base
+    labels:
+      <<: *sandbox-labels
+      io.github.ai-agent-sandbox.service: "sandbox-online"
+      io.github.ai-agent-sandbox.network: "online"
