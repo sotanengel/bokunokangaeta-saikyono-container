@@ -10,6 +10,8 @@ for file in scripts/*.sh; do
   bash -n "${file}"
 done
 
+./scripts/check-github-actions-pinning.sh
+
 if command -v shellcheck >/dev/null 2>&1; then
   shellcheck scripts/*.sh
 fi

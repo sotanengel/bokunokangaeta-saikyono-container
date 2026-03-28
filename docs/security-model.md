@@ -26,6 +26,10 @@
 - ワークスペース以外の bind mount は増やさない
 - ネットワークは既定で無効
 - `/` やユーザー home のような高リスクな workspace mount は拒否する
+- `compose-shell.sh` も呼び出し元 `cwd` ではなく repo root を workspace として扱う
+- GitHub Actions の外部 `uses:` は full SHA で固定する
+- npm は `min-release-age=7`、uv は `exclude-newer = "1 week"` を使う
+- Dependabot の version update は 7 日 cooldown をかける
 - すべての実行に監査用の container name と label を付与する
 
 ## 書き込み先

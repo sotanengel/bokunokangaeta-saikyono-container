@@ -61,6 +61,7 @@ if [[ ${#agents[@]} -eq 0 ]]; then
 fi
 
 export NPM_CONFIG_PREFIX="${HOME}/.local"
+export UV_EXCLUDE_NEWER="${UV_EXCLUDE_NEWER:-1 week}"
 mkdir -p "${HOME}/.local/bin"
 
 for agent in "${agents[@]}"; do
