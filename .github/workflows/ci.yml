@@ -28,20 +28,26 @@ jobs:
           sudo apt-get install -y shellcheck
 
       - name: Shellcheck
-        run: shellcheck $(git ls-files 'scripts/*.sh')
+        run: |
+          mapfile -t shell_files < <(git ls-files 'scripts/*.sh')
+          shellcheck "${shell_files[@]}"
 
       - name: Yamllint
         run: yamllint .
 
       - name: Markdownlint
-        run: npx --yes markdownlint-cli@0.48.0 $(git ls-files '*.md')
+        run: |
+          mapfile -t markdown_files < <(git ls-files '*.md')
+          npx --yes markdownlint-cli@0.48.0 "${markdown_files[@]}"
 
       - name: Actionlint
-        run: docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:latest
+        run: docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.11
 
   build-and-smoke:
     runs-on: ubuntu-latest
     needs: lint
+    env:
+      CONTAINER_ENGINE: docker
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
@@ -57,6 +63,8 @@ jobs:
   polyglot-smoke:
     runs-on: ubuntu-latest
     needs: lint
+    env:
+      CONTAINER_ENGINE: docker
     strategy:
       fail-fast: false
       matrix:
@@ -77,6 +85,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: lint
     timeout-minutes: 30
+    env:
+      CONTAINER_ENGINE: docker
     strategy:
       fail-fast: false
       matrix:

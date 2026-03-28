@@ -18,6 +18,8 @@
 ./scripts/audit-host-security.sh
 ./scripts/lint-local.sh
 ./scripts/run-pre-commit.sh
+# hook を常用する場合:
+# ./scripts/run-pre-commit.sh install
 make build
 make smoke
 make polyglot-smoke POLYGLOT_GROUP=core

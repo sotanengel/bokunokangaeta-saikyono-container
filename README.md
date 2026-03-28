@@ -92,7 +92,7 @@ make doctor-host
 - `scripts/check-github-actions-pinning.sh`: workflow 内の `uses:` が full SHA かを確認
 - `scripts/run-pre-commit.sh`: repo ローカル venv で `pre-commit` を実行
 - `scripts/lint-local.sh`: ローカル静的チェック
-- `.pre-commit-config.yaml`: commit 前に回す lint/hadolint/markdownlint/shellcheck 設定
+- `.pre-commit-config.yaml`: commit 前に回す lint/hadolint/markdownlint/shellcheck/actionlint 設定
 - `.npmrc`: npm の `min-release-age` による検疫期間
 - `pyproject.toml`: `uv` の `exclude-newer` による検疫期間
 - `.devcontainer/devcontainer.json`: VS Code/Cursor/Copilot 向けの開発コンテナ設定
