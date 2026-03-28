@@ -48,7 +48,13 @@ else
 fi
 
 if command -v npx >/dev/null 2>&1; then
-  npx --yes markdownlint-cli@0.39 $(git ls-files '*.md')
+  markdown_files=()
+  while IFS= read -r file; do
+    markdown_files+=("${file}")
+  done < <(git ls-files '*.md')
+  if [[ ${#markdown_files[@]} -gt 0 ]]; then
+    npx --yes markdownlint-cli@0.39 "${markdown_files[@]}"
+  fi
 else
   printf '%s\n' "npx not found; skipping Markdown lint." >&2
 fi

@@ -123,8 +123,8 @@ declare -a run_args=(
   --pids-limit=512
   --user=agent
   --workdir=/workspace
-  --tmpfs=/tmp:rw,nosuid,nodev,noexec,size=1073741824
-  --tmpfs=/var/tmp:rw,nosuid,nodev,noexec,size=268435456
+  "--tmpfs=/tmp:rw,nosuid,nodev,noexec,size=1073741824"
+  "--tmpfs=/var/tmp:rw,nosuid,nodev,noexec,size=268435456"
   --name
   "${container_name}"
   --label

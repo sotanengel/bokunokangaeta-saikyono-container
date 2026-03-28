@@ -10,19 +10,22 @@ if [[ -f "${audit_log}" ]]; then
   before_lines="$(wc -l < "${audit_log}" | tr -d ' ')"
 fi
 
-"${script_dir}/run-sandbox.sh" --image "${image}" --reason "smoke-test" -- bash -c '
-  set -euo pipefail
-  test "$(id -u)" != "0"
-  command -v node >/dev/null
-  command -v npm >/dev/null
-  command -v python3 >/dev/null
-  command -v uv >/dev/null
-  command -v mise >/dev/null
-  command -v git >/dev/null
-  test -x /usr/bin/tini
-  test -f /workspace/AGENTS.md
-  test -f /workspace/Containerfile
-'
+smoke_command="$(cat <<'EOF'
+set -euo pipefail
+test "$(id -u)" != "0"
+command -v node >/dev/null
+command -v npm >/dev/null
+command -v python3 >/dev/null
+command -v uv >/dev/null
+command -v mise >/dev/null
+command -v git >/dev/null
+test -x /usr/bin/tini
+test -f /workspace/AGENTS.md
+test -f /workspace/Containerfile
+EOF
+)"
+
+"${script_dir}/run-sandbox.sh" --image "${image}" --reason "smoke-test" -- bash -c "${smoke_command}"
 
 if "${script_dir}/run-sandbox.sh" --image "${image}" --workspace "${HOME}" --reason "unsafe-workspace-check" -- bash -c 'true' >/dev/null 2>&1; then
   printf '%s\n' "run-sandbox.sh should reject mounting the user home as /workspace." >&2
