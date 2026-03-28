@@ -5,3 +5,4 @@
 - 通常の生成ループはオフライン既定で回す
 - 追加の言語や依存が必要なら `bootstrap-languages` と `install-agents` を使う
 - 検証フェーズでは独立したスモークテストを回す
+- PR を作るときは `.github/pull_request_template.md` に合わせる
