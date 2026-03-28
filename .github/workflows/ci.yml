@@ -53,3 +53,46 @@ jobs:
         env:
           IMAGE: ai-agent-sandbox:ci
         run: ./scripts/smoke-test.sh
+
+  polyglot-smoke:
+    runs-on: ubuntu-latest
+    needs: lint
+    strategy:
+      fail-fast: false
+      matrix:
+        group:
+          - core
+          - extended
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build image
+        run: ./scripts/build-image.sh --image ai-agent-sandbox:polyglot-${{ matrix.group }}
+
+      - name: Polyglot smoke
+        run: ./scripts/polyglot-smoke-test.sh --image ai-agent-sandbox:polyglot-${{ matrix.group }} --group ${{ matrix.group }}
+
+  agent-smoke:
+    runs-on: ubuntu-latest
+    needs: lint
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        agent:
+          - codex
+          - claude
+          - gemini
+          - aider
+          - copilot
+          - cursor
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build image
+        run: ./scripts/build-image.sh --image ai-agent-sandbox:agent-${{ matrix.agent }}
+
+      - name: Agent smoke
+        run: ./scripts/agent-smoke-test.sh --image ai-agent-sandbox:agent-${{ matrix.agent }} --agent ${{ matrix.agent }}

@@ -7,8 +7,42 @@ Usage:
   install-host-tools-macos.sh [--write-shell-profile] [--skip-machine] [--machine-name NAME]
 
 Installs user-local Podman, Podman helper binaries, Docker CLI, and podman-compose on macOS.
-By default it also initializes or starts a Podman machine for local container execution.
+By default it also initializes or repairs a Podman machine for local container execution.
+If Podman machine startup still fails, the script leaves Docker usable and prints follow-up steps.
 EOF
+}
+
+note() {
+  printf '%s\n' "$*"
+}
+
+warn() {
+  printf 'warning: %s\n' "$*" >&2
+}
+
+run_podman_machine_cmd() {
+  local action="$1"
+  local name="$2"
+  python3 - "${action}" "${name}" <<'PY'
+import subprocess
+import sys
+
+action = sys.argv[1]
+name = sys.argv[2]
+
+try:
+    subprocess.run(
+        ["podman", "machine", action, name],
+        check=True,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        timeout=120,
+    )
+except subprocess.TimeoutExpired:
+    raise SystemExit(124)
+except subprocess.CalledProcessError as exc:
+    raise SystemExit(exc.returncode)
+PY
 }
 
 write_shell_profile=0
@@ -70,19 +104,25 @@ case "$(uname -m)" in
     ;;
 esac
 
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 bin_dir="${HOME}/.local/bin"
 podman_root="${HOME}/.local/lib/podman"
 podman_bin_dir="${podman_root}/bin"
 podman_lib_dir="${podman_root}/lib"
 containers_conf="${HOME}/.config/containers/containers.conf"
 shell_profile="${HOME}/.zprofile"
+python_user_bin="${HOME}/Library/Python/$(python3 - <<'PY'
+import sys
+print(f"{sys.version_info.major}.{sys.version_info.minor}")
+PY
+)/bin"
 
 mkdir -p "${bin_dir}" "${podman_bin_dir}" "${podman_lib_dir}" "${HOME}/.config/containers"
 
 tmp_dir="$(mktemp -d)"
 trap 'rm -rf "${tmp_dir}"' EXIT
 
-printf '%s\n' "Resolving latest Podman release metadata..."
+note "Resolving latest Podman release metadata..."
 podman_release_json="${tmp_dir}/podman-release.json"
 curl -fsSL "https://api.github.com/repos/containers/podman/releases/latest" -o "${podman_release_json}"
 
@@ -118,12 +158,12 @@ else:
 PY
 )"
 
-printf '%s\n' "Downloading Podman CLI..."
+note "Downloading Podman CLI..."
 curl -fsSL "${podman_remote_url}" -o "${tmp_dir}/podman-remote.zip"
 unzip -qo "${tmp_dir}/podman-remote.zip" -d "${tmp_dir}/podman-remote"
 install -m 0755 "${tmp_dir}/podman-remote/podman" "${bin_dir}/podman"
 
-printf '%s\n' "Downloading Podman helper bundle..."
+note "Downloading Podman helper bundle..."
 curl -fsSL "${podman_pkg_url}" -o "${tmp_dir}/podman-installer.pkg"
 pkgutil --expand-full "${tmp_dir}/podman-installer.pkg" "${tmp_dir}/podman-pkg"
 cp -R "${tmp_dir}/podman-pkg/podman.pkg/Payload/podman/bin/." "${podman_bin_dir}/"
@@ -131,7 +171,7 @@ cp -R "${tmp_dir}/podman-pkg/podman.pkg/Payload/podman/lib/." "${podman_lib_dir}
 chmod 0755 "${podman_bin_dir}"/*
 ln -sfn "${podman_bin_dir}/podman-mac-helper" "${bin_dir}/podman-mac-helper"
 
-printf '%s\n' "Resolving latest Docker CLI bundle..."
+note "Resolving latest Docker CLI bundle..."
 docker_index="${tmp_dir}/docker-index.html"
 curl -fsSL "https://download.docker.com/mac/static/stable/${docker_arch}/" -o "${docker_index}"
 
@@ -157,7 +197,7 @@ print(best_name)
 PY
 )"
 
-printf '%s\n' "Downloading Docker CLI..."
+note "Downloading Docker CLI..."
 curl -fsSL "https://download.docker.com/mac/static/stable/${docker_arch}/${docker_archive}" -o "${tmp_dir}/docker.tgz"
 tar -xzf "${tmp_dir}/docker.tgz" -C "${tmp_dir}"
 install -m 0755 "${tmp_dir}/docker/docker" "${bin_dir}/docker"
@@ -165,7 +205,7 @@ if [[ -x /Applications/Docker.app/Contents/Resources/bin/docker-credential-deskt
   ln -sfn /Applications/Docker.app/Contents/Resources/bin/docker-credential-desktop "${bin_dir}/docker-credential-desktop"
 fi
 
-printf '%s\n' "Installing podman-compose..."
+note "Installing podman-compose..."
 python3 -m pip install --user --upgrade podman-compose
 
 python3 - "${containers_conf}" "${podman_bin_dir}" <<'PY'
@@ -189,29 +229,33 @@ elif "[engine]" in text:
     text = text.replace("[engine]\n", "[engine]\n" + managed + "\n", 1)
 else:
     if text and not text.endswith("\n"):
-      text += "\n"
+        text += "\n"
     text += "[engine]\n" + managed + "\n"
 
 path.write_text(text)
 PY
 
 if [[ ${write_shell_profile} -eq 1 ]]; then
-  python3 - "${shell_profile}" <<'PY'
+  python3 - "${shell_profile}" "${python_user_bin}" <<'PY'
 import pathlib
 import re
 import sys
 
 path = pathlib.Path(sys.argv[1])
+python_user_bin = sys.argv[2]
 text = path.read_text() if path.exists() else ""
-block = """# >>> ai-agent-sandbox
-PATH="$HOME/.local/bin:$HOME/Library/Python/3.9/bin:${PATH}"
+block = f"""# >>> ai-agent-sandbox
+PATH="$HOME/.local/bin:{python_user_bin}:${{PATH}}"
 export PATH
-if [ -z "${DOCKER_HOST:-}" ] && [ ! -S /var/run/docker.sock ]; then
-  _podman_docker_host="unix://${TMPDIR%/}/podman/podman-machine-default-api.sock"
-  if [ -S "${TMPDIR%/}/podman/podman-machine-default-api.sock" ]; then
-    export DOCKER_HOST="${_podman_docker_host}"
+if [ -z "${{DOCKER_HOST:-}}" ] && command -v podman >/dev/null 2>&1; then
+  if ! command -v docker >/dev/null 2>&1 || ! docker info >/dev/null 2>&1; then
+    _podman_machine="${{PODMAN_MACHINE_NAME:-podman-machine-default}}"
+    _podman_socket="$(podman machine inspect "${{_podman_machine}}" --format '{{{{.ConnectionInfo.PodmanSocket.Path}}}}' 2>/dev/null || true)"
+    if [ -n "${{_podman_socket}}" ] && [ -S "${{_podman_socket}}" ] && podman info >/dev/null 2>&1; then
+      export DOCKER_HOST="unix://${{_podman_socket}}"
+    fi
+    unset _podman_machine _podman_socket
   fi
-  unset _podman_docker_host
 fi
 # <<< ai-agent-sandbox
 """
@@ -228,46 +272,57 @@ path.write_text(text)
 PY
 fi
 
-export PATH="${bin_dir}:${HOME}/Library/Python/$(python3 - <<'PY'
-import sys
-print(f"{sys.version_info.major}.{sys.version_info.minor}")
-PY
-)/bin:${PATH}"
+export PATH="${bin_dir}:${python_user_bin}:${PATH}"
+
+podman_machine_ready=0
+docker_ready=0
+
+if docker info >/dev/null 2>&1; then
+  docker_ready=1
+fi
 
 if [[ ${skip_machine} -eq 0 ]]; then
   if podman machine inspect "${machine_name}" >/dev/null 2>&1; then
-    machine_state="$(podman machine inspect "${machine_name}" --format '{{.State}}')"
-    if [[ "${machine_state}" != "running" ]]; then
-      printf 'Starting Podman machine: %s\n' "${machine_name}"
-      podman machine start "${machine_name}"
-    fi
+    note "Found Podman machine: ${machine_name}"
   else
     podman system connection rm "${machine_name}" >/dev/null 2>&1 || true
     podman system connection rm "${machine_name}-root" >/dev/null 2>&1 || true
-    printf 'Initializing Podman machine: %s\n' "${machine_name}"
-    podman machine init --now "${machine_name}"
+    note "Initializing Podman machine: ${machine_name}"
+    if ! run_podman_machine_cmd init "${machine_name}"; then
+      warn "Podman machine initialization did not complete for ${machine_name}."
+    fi
+  fi
+
+  if ! "${script_dir}/repair-podman-machine-macos.sh" --machine-name "${machine_name}"; then
+    warn "could not apply the Podman machine repair pass for ${machine_name}"
+  fi
+
+  podman system connection default "${machine_name}" >/dev/null 2>&1 || true
+
+  note "Starting Podman machine: ${machine_name}"
+  if "${script_dir}/start-podman-machine-macos.sh" --machine-name "${machine_name}"; then
+    podman_machine_ready=1
+  else
+    warn "Podman machine startup did not become ready on this host."
+    warn "You can retry with: ./scripts/start-podman-machine-macos.sh --machine-name ${machine_name}"
+    warn "You can retry with: ./scripts/repair-podman-machine-macos.sh --machine-name ${machine_name}"
+    warn "Docker remains usable if Docker Desktop is running."
   fi
 fi
 
-if podman machine inspect "${machine_name}" >/dev/null 2>&1; then
+if [[ ${podman_machine_ready} -eq 1 ]]; then
   socket_path="$(podman machine inspect "${machine_name}" --format '{{.ConnectionInfo.PodmanSocket.Path}}')"
-  export DOCKER_HOST="unix://${socket_path}"
+  if [[ ${docker_ready} -eq 0 ]]; then
+    export DOCKER_HOST="unix://${socket_path}"
+  fi
 fi
 
 printf '\nInstalled tools:\n'
 printf '  %s\n' "$(podman --version)"
 printf '  %s\n' "$(docker --version)"
 printf '  %s\n' "$(podman-compose version | tail -n 1)"
-if docker version --format 'client={{.Client.Version}} server={{.Server.Version}}' >/dev/null 2>&1; then
-  printf '  %s\n' "$(docker version --format 'docker-api client={{.Client.Version}} server={{.Server.Version}}')"
-fi
 
-if podman machine inspect "${machine_name}" >/dev/null 2>&1; then
-  printf '\nDocker-compatible socket:\n'
-  printf '  export DOCKER_HOST=%q\n' "unix://${socket_path}"
-fi
-
-if [[ ${write_shell_profile} -eq 1 ]]; then
-  printf '\nUpdated shell profile:\n'
-  printf '  %s\n' "${shell_profile}"
+if [[ -x "${script_dir}/check-container-engines.sh" ]]; then
+  printf '\nEngine status:\n'
+  "${script_dir}/check-container-engines.sh" || true
 fi

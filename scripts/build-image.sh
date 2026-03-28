@@ -31,6 +31,7 @@ done
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "${script_dir}/.." && pwd)"
 engine="$("${script_dir}/detect-container-engine.sh")"
+declare -a build_args=()
 
 cleanup_dir=""
 
@@ -60,4 +61,9 @@ PY
   export DOCKER_CONFIG="${cleanup_dir}"
 fi
 
-"${engine}" build -f "${repo_root}/Containerfile" -t "${image}" "${repo_root}"
+if [[ "${engine}" == "podman" ]]; then
+  # Podman defaults to OCI format, which ignores Dockerfile SHELL semantics.
+  build_args+=(--format docker)
+fi
+
+"${engine}" build "${build_args[@]}" -f "${repo_root}/Containerfile" -t "${image}" "${repo_root}"

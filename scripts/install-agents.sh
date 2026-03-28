@@ -75,7 +75,7 @@ for agent in "${agents[@]}"; do
       npm install -g @google/gemini-cli
       ;;
     aider)
-      uv tool install --reinstall --bin-dir "${HOME}/.local/bin" --python python3 aider-chat
+      uv tool install --reinstall --python python3 aider-chat
       ;;
     copilot)
       printf '%s\n' "GitHub Copilot is supported in this repo via .github/copilot-instructions.md and .devcontainer/devcontainer.json."

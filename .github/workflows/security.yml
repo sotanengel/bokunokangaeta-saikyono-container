@@ -27,12 +27,16 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Build image
         run: ./scripts/build-image.sh --image ai-agent-sandbox:security
+
+      - name: Export image archive
+        run: ./scripts/export-image-artifacts.sh --image ai-agent-sandbox:security --output-dir dist/security-artifacts
 
       - name: Hadolint
         run: docker run --rm -i hadolint/hadolint < Containerfile
@@ -54,6 +58,31 @@ jobs:
 
       - name: Trivy image scan
         run: trivy image --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed ai-agent-sandbox:security
+
+      - name: Install Syft
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b "$HOME/.local/bin"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Generate SBOM
+        run: syft docker:ai-agent-sandbox:security -o spdx-json=dist/security-artifacts/ai-agent-sandbox-security.spdx.json
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Sign archive checksum
+        run: |
+          cosign sign-blob --yes \
+            --output-signature dist/security-artifacts/ai-agent-sandbox_security.tar.sha256.sig \
+            --output-certificate dist/security-artifacts/ai-agent-sandbox_security.tar.sha256.pem \
+            dist/security-artifacts/ai-agent-sandbox_security.tar.sha256
+
+      - name: Upload security artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-artifacts
+          path: dist/security-artifacts
 
       - name: Gitleaks
         uses: gitleaks/gitleaks-action@v2
