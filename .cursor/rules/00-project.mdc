@@ -10,4 +10,5 @@ alwaysApply: true
 - Default to offline execution and explicit verification.
 - Keep root filesystem immutable at runtime and use `.sandbox/home` for writable user state.
 - Add or update docs whenever the security model or agent support changes.
+- Use a separate branch per implementation and do not mix unrelated changes into one branch or PR.
 - Follow `.github/pull_request_template.md` when preparing a pull request description.
