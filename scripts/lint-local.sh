@@ -10,6 +10,9 @@ for file in scripts/*.sh; do
   bash -n "${file}"
 done
 
+./scripts/check-github-actions-pinning.sh
+./scripts/check-sandbox-runtime-config.sh
+
 if command -v shellcheck >/dev/null 2>&1; then
   shellcheck scripts/*.sh
 fi
@@ -46,7 +49,13 @@ else
 fi
 
 if command -v npx >/dev/null 2>&1; then
-  npx --yes markdownlint-cli@0.39 $(git ls-files '*.md')
+  markdown_files=()
+  while IFS= read -r file; do
+    markdown_files+=("${file}")
+  done < <(git ls-files '*.md')
+  if [[ ${#markdown_files[@]} -gt 0 ]]; then
+    npx --yes markdownlint-cli@0.48.0 "${markdown_files[@]}"
+  fi
 else
   printf '%s\n' "npx not found; skipping Markdown lint." >&2
 fi

@@ -59,6 +59,14 @@ case "${engine}" in
     ;;
 esac
 
-shasum -a 256 "${archive_path}" > "${checksum_path}"
+if command -v sha256sum >/dev/null 2>&1; then
+  sha256sum "${archive_path}" > "${checksum_path}"
+elif command -v shasum >/dev/null 2>&1; then
+  shasum -a 256 "${archive_path}" > "${checksum_path}"
+else
+  printf '%s\n' "missing checksum tool: install sha256sum or shasum." >&2
+  exit 1
+fi
+
 printf '%s\n' "${archive_path}"
 printf '%s\n' "${checksum_path}"

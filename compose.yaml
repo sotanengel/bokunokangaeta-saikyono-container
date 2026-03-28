@@ -8,7 +8,7 @@ x-sandbox-base: &sandbox-base
     dockerfile: Containerfile
   image: ai-agent-sandbox:latest
   working_dir: /workspace
-  user: agent
+  user: "${SANDBOX_UID:-1000}:${SANDBOX_GID:-1000}"
   read_only: true
   stdin_open: true
   tty: true

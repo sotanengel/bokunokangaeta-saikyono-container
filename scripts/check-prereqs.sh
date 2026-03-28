@@ -31,8 +31,8 @@ if engine="$("${script_dir}/detect-container-engine.sh" 2>/dev/null)"; then
     printf 'miss container-engine-runtime (%s is installed but not ready)\n' "${engine}" >&2
     if [[ "${engine}" == "podman" && "$(uname -s)" == "Darwin" ]]; then
       printf 'hint run: ./scripts/install-host-tools-macos.sh\n' >&2
-      printf 'hint or: ./scripts/start-podman-machine-macos.sh --machine-name ${PODMAN_MACHINE_NAME:-podman-machine-default}\n' >&2
-      printf 'hint or: ./scripts/repair-podman-machine-macos.sh --machine-name ${PODMAN_MACHINE_NAME:-podman-machine-default}\n' >&2
+      printf 'hint or: ./scripts/start-podman-machine-macos.sh --machine-name %s\n' "${PODMAN_MACHINE_NAME:-podman-machine-default}" >&2
+      printf 'hint or: ./scripts/repair-podman-machine-macos.sh --machine-name %s\n' "${PODMAN_MACHINE_NAME:-podman-machine-default}" >&2
     elif [[ "${engine}" == "docker" ]]; then
       printf 'hint start the Docker daemon or set DOCKER_HOST to a reachable API socket.\n' >&2
     fi

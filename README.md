@@ -20,6 +20,7 @@ make doctor
 make doctor-host
 make audit-host-security
 make lint
+make pre-commit
 make build
 make shell
 make shell-online
@@ -88,7 +89,13 @@ make doctor-host
 - `scripts/repair-podman-machine-macos.sh`: macOS 上の Podman machine 定義を補修
 - `scripts/check-prereqs.sh`: ローカル前提条件の確認
 - `scripts/check-container-engines.sh`: Podman/Docker のホスト実行状態を個別に診断
+- `scripts/check-github-actions-pinning.sh`: workflow 内の `uses:` が full SHA かを確認
+- `scripts/run-pre-commit.sh`: repo ローカル venv で `pre-commit` を実行
+- `scripts/check-sandbox-runtime-config.sh`: sandbox 実行 UID/GID と compose 設定の静的検証
 - `scripts/lint-local.sh`: ローカル静的チェック
+- `.pre-commit-config.yaml`: commit 前に回す lint/hadolint/markdownlint/shellcheck/actionlint 設定
+- `.npmrc`: npm の `min-release-age` による検疫期間
+- `pyproject.toml`: `uv` の `exclude-newer` による検疫期間
 - `.devcontainer/devcontainer.json`: VS Code/Cursor/Copilot 向けの開発コンテナ設定
 - `compose.yaml`: Compose ベースの起動定義
 - `AGENTS.md`: 共通のプロジェクト指示
@@ -109,8 +116,11 @@ make doctor-host
 - `--security-opt=no-new-privileges`
 - `--read-only` の root filesystem
 - 書き込み可能なのは `workspace` とリポジトリ配下の `.sandbox/home`
+- `run-sandbox` と `compose-shell` は bind mount の owner 差異を避けるため、実行時 UID/GID を呼び出し元にそろえる
 - `run-sandbox` と `compose-shell` は start/finish を host 側監査ログへ残す
-- `/` や `HOME` のような高リスクな workspace mount は既定で拒否する
+- `compose-shell` も repo root を workspace として固定し、`/` や `HOME` のような高リスク mount を既定で拒否する
+- GitHub Actions の `uses:` は full SHA pin を前提にし、`lint-local` でも崩れないように確認する
+- npm と uv は 7 日の検疫期間を置き、新規公開直後の依存をすぐには採らない
 - 検証は CI とスモークテストで別系統に回す
 - 依存更新と GitHub Actions 更新は Dependabot に任せる
 
@@ -135,6 +145,8 @@ make doctor-host
 - macOS Podman machine 起動: `make start-podman-machine-macos`
 - macOS Podman machine 補修: `make repair-podman-machine-macos`
 - ローカル静的チェック: `make lint`
+- commit 前の総合チェック: `make pre-commit`
+- 実行設定の静的確認: `./scripts/check-sandbox-runtime-config.sh`
 - 多言語 smoke: `make polyglot-smoke POLYGLOT_GROUP=core`
 - エージェント smoke: `make agent-smoke AGENT_SMOKE=codex`
 - archive と checksum の出力: `make export-image-artifacts`
@@ -148,5 +160,9 @@ make doctor-host
 - macOS の `docker` CLI は Docker Desktop を優先し、必要時のみ Podman API ソケットへ退避します
 - 監査ログは `${XDG_STATE_HOME:-$HOME/.local/state}/ai-agent-sandbox/audit/container-runs.jsonl` に記録されます
 - ネットワークが必要な実行は `--reason` を付けて監査しやすくしてください
+- `export-image-artifacts` の checksum 生成は `sha256sum` を優先し、ない host では `shasum -a 256` を使います
+- Dependabot の version update も 7 日 cooldown を入れ、リリース直後の更新を遅延させます
+- commit 前チェックは `make install-pre-commit-hook` で hook 登録できます
+- `run-sandbox.sh --dry-run` と `compose-shell.sh --dry-run` で engine なしでも runtime 設定を確認できます
 - CI は多言語 smoke、エージェント smoke、SBOM 生成、checksum 署名まで回します
 - `.sandbox/` はローカル専用の作業領域として `.gitignore` しています

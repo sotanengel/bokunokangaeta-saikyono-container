@@ -1,0 +1,50 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-json
+      - id: check-toml
+      - id: check-yaml
+        args:
+          - --allow-multiple-documents
+      - id: check-merge-conflict
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.11.0.1
+    hooks:
+      - id: shellcheck
+        files: ^scripts/.*\.sh$
+
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.48.0
+    hooks:
+      - id: markdownlint
+        args:
+          - --config
+          - .markdownlint.json
+
+  - repo: https://github.com/coatl-dev/hadolint-coatl
+    rev: 2.14.0
+    hooks:
+      - id: hadolint
+        files: ^Containerfile$
+
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.11
+    hooks:
+      - id: actionlint
+
+  - repo: local
+    hooks:
+      - id: check-github-actions-pinning
+        name: check GitHub Actions SHA pinning
+        entry: ./scripts/check-github-actions-pinning.sh
+        language: system
+        pass_filenames: false
+      - id: check-sandbox-runtime-config
+        name: check sandbox runtime config
+        entry: ./scripts/check-sandbox-runtime-config.sh
+        language: system
+        pass_filenames: false

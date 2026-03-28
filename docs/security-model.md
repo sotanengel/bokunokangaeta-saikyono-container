@@ -18,6 +18,7 @@
 ## ランタイム制御
 
 - コンテナ内ユーザーは `agent`
+- 実行時 UID/GID は bind mount の書き込み整合のため呼び出し元に合わせる
 - root filesystem は read-only
 - `--cap-drop=ALL`
 - `--security-opt=no-new-privileges`
@@ -26,6 +27,10 @@
 - ワークスペース以外の bind mount は増やさない
 - ネットワークは既定で無効
 - `/` やユーザー home のような高リスクな workspace mount は拒否する
+- `compose-shell.sh` も呼び出し元 `cwd` ではなく repo root を workspace として扱う
+- GitHub Actions の外部 `uses:` は full SHA で固定する
+- npm は `min-release-age=7`、uv は `exclude-newer = "1 week"` を使う
+- Dependabot の version update は 7 日 cooldown をかける
 - すべての実行に監査用の container name と label を付与する
 
 ## 書き込み先
@@ -46,6 +51,7 @@
 ## 検証ライン
 
 - スモークテストでコンテナ境界、監査ログ、高リスク mount 拒否を確認する
+- `check-sandbox-runtime-config.sh` で runtime UID/GID と compose 設定を engine なしで確認する
 - CI で lint と build を回す
 - Security workflow で秘密情報、Dockerfile 品質、脆弱性を検査する
 
