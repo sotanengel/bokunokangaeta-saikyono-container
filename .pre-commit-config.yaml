@@ -43,3 +43,8 @@ repos:
         entry: ./scripts/check-github-actions-pinning.sh
         language: system
         pass_filenames: false
+      - id: check-sandbox-runtime-config
+        name: check sandbox runtime config
+        entry: ./scripts/check-sandbox-runtime-config.sh
+        language: system
+        pass_filenames: false

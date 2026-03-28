@@ -4,6 +4,7 @@ set -euo pipefail
 service="sandbox"
 online="false"
 reason="compose-shell"
+dry_run="false"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -16,11 +17,16 @@ while [[ $# -gt 0 ]]; do
       reason="$2"
       shift 2
       ;;
+    --dry-run)
+      dry_run="true"
+      shift
+      ;;
     -h|--help)
       cat <<'EOF'
 Usage:
   compose-shell.sh
   compose-shell.sh --online [--reason TEXT]
+  compose-shell.sh --dry-run
 EOF
       exit 0
       ;;
@@ -76,6 +82,8 @@ workspace="${repo_root}"
 compose_engine="${compose_cmd[0]}"
 command_preview="bash"
 compose_file="${repo_root}/compose.yaml"
+sandbox_uid="${SANDBOX_UID:-$(id -u)}"
+sandbox_gid="${SANDBOX_GID:-$(id -g)}"
 
 if [[ ! -f "${compose_file}" ]]; then
   printf 'missing compose file: %s\n' "${compose_file}" >&2
@@ -84,6 +92,18 @@ fi
 
 validate_workspace "${workspace}"
 mkdir -p "${repo_root}/.sandbox/home"
+compose_command_preview="$(printf '%q ' env "SANDBOX_UID=${sandbox_uid}" "SANDBOX_GID=${sandbox_gid}" "${compose_cmd[@]}" -f "${compose_file}" run --rm "${service}" bash)"
+compose_command_preview="${compose_command_preview% }"
+
+if [[ "${dry_run}" == "true" ]]; then
+  printf 'compose_engine=%s\n' "${compose_engine}"
+  printf 'workspace=%s\n' "${workspace}"
+  printf 'compose_file=%s\n' "${compose_file}"
+  printf 'sandbox_uid=%s\n' "${sandbox_uid}"
+  printf 'sandbox_gid=%s\n' "${sandbox_gid}"
+  printf 'command=%s\n' "${compose_command_preview}"
+  exit 0
+fi
 
 "${script_dir}/write-audit-log.sh" \
   --event start \
@@ -100,7 +120,8 @@ mkdir -p "${repo_root}/.sandbox/home"
 set +e
 (
   cd "${repo_root}"
-  "${compose_cmd[@]}" -f "${compose_file}" run --rm "${service}" bash
+  SANDBOX_UID="${sandbox_uid}" SANDBOX_GID="${sandbox_gid}" \
+    "${compose_cmd[@]}" -f "${compose_file}" run --rm "${service}" bash
 )
 exit_code=$?
 set -e

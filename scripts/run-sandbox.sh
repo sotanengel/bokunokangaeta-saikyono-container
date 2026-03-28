@@ -6,6 +6,7 @@ usage() {
 Usage:
   run-sandbox.sh --image ai-agent-sandbox:latest [--online] [--reason TEXT] [--agent shell]
   run-sandbox.sh --image ai-agent-sandbox:latest [--reason TEXT] -- command arg1 arg2
+  run-sandbox.sh --dry-run --image ai-agent-sandbox:latest
 EOF
 }
 
@@ -15,6 +16,7 @@ agent="shell"
 online=false
 reason="unspecified"
 allow_unsafe_workspace=false
+dry_run=false
 declare -a custom_command=()
 declare -a env_vars=(
   OPENAI_API_KEY
@@ -53,6 +55,10 @@ while [[ $# -gt 0 ]]; do
       allow_unsafe_workspace=true
       shift
       ;;
+    --dry-run)
+      dry_run=true
+      shift
+      ;;
     --)
       shift
       custom_command=("$@")
@@ -71,8 +77,15 @@ while [[ $# -gt 0 ]]; do
 done
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-engine="$("${script_dir}/detect-container-engine.sh")"
 workspace="$(cd "${workspace}" && pwd)"
+runtime_uid="${SANDBOX_UID:-$(id -u)}"
+runtime_gid="${SANDBOX_GID:-$(id -g)}"
+
+if [[ "${dry_run}" == true && -z "${CONTAINER_ENGINE:-}" ]] && ! command -v podman >/dev/null 2>&1 && ! command -v docker >/dev/null 2>&1; then
+  engine="docker"
+else
+  engine="$("${script_dir}/detect-container-engine.sh")"
+fi
 
 validate_workspace() {
   local candidate="$1"
@@ -121,7 +134,8 @@ declare -a run_args=(
   --cap-drop=ALL
   --security-opt=no-new-privileges
   --pids-limit=512
-  --user=agent
+  --user
+  "${runtime_uid}:${runtime_gid}"
   --workdir=/workspace
   "--tmpfs=/tmp:rw,nosuid,nodev,noexec,size=1073741824"
   "--tmpfs=/var/tmp:rw,nosuid,nodev,noexec,size=268435456"
@@ -201,6 +215,18 @@ fi
 command_preview="$(printf '%q ' "${default_command[@]}")"
 command_preview="${command_preview% }"
 forwarded_env_csv="$(IFS=,; printf '%s' "${forwarded_env[*]-}")"
+run_command_preview="$(printf '%q ' "${engine}" "${run_args[@]}" "${image}" "${default_command[@]}")"
+run_command_preview="${run_command_preview% }"
+
+if [[ "${dry_run}" == true ]]; then
+  printf 'engine=%s\n' "${engine}"
+  printf 'workspace=%s\n' "${workspace}"
+  printf 'home_mount=%s\n' "${home_mount}"
+  printf 'runtime_uid=%s\n' "${runtime_uid}"
+  printf 'runtime_gid=%s\n' "${runtime_gid}"
+  printf 'command=%s\n' "${run_command_preview}"
+  exit 0
+fi
 
 "${script_dir}/write-audit-log.sh" \
   --event start \

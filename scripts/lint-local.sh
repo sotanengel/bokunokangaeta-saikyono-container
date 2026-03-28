@@ -11,6 +11,7 @@ for file in scripts/*.sh; do
 done
 
 ./scripts/check-github-actions-pinning.sh
+./scripts/check-sandbox-runtime-config.sh
 
 if command -v shellcheck >/dev/null 2>&1; then
   shellcheck scripts/*.sh

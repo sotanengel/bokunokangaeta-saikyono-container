@@ -18,6 +18,7 @@
 ## ランタイム制御
 
 - コンテナ内ユーザーは `agent`
+- 実行時 UID/GID は bind mount の書き込み整合のため呼び出し元に合わせる
 - root filesystem は read-only
 - `--cap-drop=ALL`
 - `--security-opt=no-new-privileges`
@@ -50,6 +51,7 @@
 ## 検証ライン
 
 - スモークテストでコンテナ境界、監査ログ、高リスク mount 拒否を確認する
+- `check-sandbox-runtime-config.sh` で runtime UID/GID と compose 設定を engine なしで確認する
 - CI で lint と build を回す
 - Security workflow で秘密情報、Dockerfile 品質、脆弱性を検査する
 
