@@ -13,7 +13,7 @@
 - root 権限前提の変更を入れない
 - bind mount は最小限に保つ
 - 検証を省略したまま仕様完了扱いにしない
-- PR を作るときは `.github/pull_request_template.md` に従い、未実施の確認があれば理由を明記する
+- PR を作るときは `.github/pull_request_template.md` に従い、概要・背景・変更内容と実施したテスト項目を埋める
 
 ## Change Priorities
 
