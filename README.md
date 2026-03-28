@@ -20,6 +20,7 @@ make doctor
 make doctor-host
 make audit-host-security
 make lint
+make pre-commit
 make build
 make shell
 make shell-online
@@ -89,7 +90,9 @@ make doctor-host
 - `scripts/check-prereqs.sh`: ローカル前提条件の確認
 - `scripts/check-container-engines.sh`: Podman/Docker のホスト実行状態を個別に診断
 - `scripts/check-github-actions-pinning.sh`: workflow 内の `uses:` が full SHA かを確認
+- `scripts/run-pre-commit.sh`: repo ローカル venv で `pre-commit` を実行
 - `scripts/lint-local.sh`: ローカル静的チェック
+- `.pre-commit-config.yaml`: commit 前に回す lint/hadolint/markdownlint/shellcheck 設定
 - `.npmrc`: npm の `min-release-age` による検疫期間
 - `pyproject.toml`: `uv` の `exclude-newer` による検疫期間
 - `.devcontainer/devcontainer.json`: VS Code/Cursor/Copilot 向けの開発コンテナ設定
@@ -140,6 +143,7 @@ make doctor-host
 - macOS Podman machine 起動: `make start-podman-machine-macos`
 - macOS Podman machine 補修: `make repair-podman-machine-macos`
 - ローカル静的チェック: `make lint`
+- commit 前の総合チェック: `make pre-commit`
 - 多言語 smoke: `make polyglot-smoke POLYGLOT_GROUP=core`
 - エージェント smoke: `make agent-smoke AGENT_SMOKE=codex`
 - archive と checksum の出力: `make export-image-artifacts`
@@ -155,5 +159,6 @@ make doctor-host
 - ネットワークが必要な実行は `--reason` を付けて監査しやすくしてください
 - `export-image-artifacts` の checksum 生成は `sha256sum` を優先し、ない host では `shasum -a 256` を使います
 - Dependabot の version update も 7 日 cooldown を入れ、リリース直後の更新を遅延させます
+- commit 前チェックは `make install-pre-commit-hook` で hook 登録できます
 - CI は多言語 smoke、エージェント smoke、SBOM 生成、checksum 署名まで回します
 - `.sandbox/` はローカル専用の作業領域として `.gitignore` しています

@@ -39,7 +39,7 @@ jobs:
         run: ./scripts/export-image-artifacts.sh --image ai-agent-sandbox:security --output-dir dist/security-artifacts
 
       - name: Hadolint
-        run: docker run --rm -i hadolint/hadolint < Containerfile
+        run: docker run --rm -i hadolint/hadolint:v2.14.0 < Containerfile
 
       - name: Install Trivy
         run: |

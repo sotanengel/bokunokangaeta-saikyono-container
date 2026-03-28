@@ -4,6 +4,7 @@ FROM node:22-bookworm-slim
 ARG USERNAME=agent
 ARG USER_UID=1000
 ARG USER_GID=1000
+ARG UV_VERSION=0.11.2
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=C.UTF-8
@@ -69,7 +70,7 @@ RUN existing_group="$(getent group "${USER_GID}" | cut -d: -f1 || true)" && \
     mkdir -p "${WORKSPACE}" "${HOME}/.local/bin" "${HOME}/.cache" "${HOME}/.config" && \
     chown -R "${USERNAME}:${USER_GID}" "${WORKSPACE}" "${HOME}"
 
-RUN python3 -m pip install --no-cache-dir --break-system-packages uv && \
+RUN python3 -m pip install --no-cache-dir --break-system-packages "uv==${UV_VERSION}" && \
     curl -fsSL https://mise.run | MISE_INSTALL_PATH=/usr/local/bin/mise sh && \
     corepack enable
 
@@ -81,8 +82,8 @@ RUN chmod 0755 \
         /usr/local/bin/agent-entrypoint \
         /usr/local/bin/bootstrap-languages \
         /usr/local/bin/install-agents && \
-    printf 'eval "$(mise activate bash)"\n' >> /etc/bash.bashrc && \
-    printf 'eval "$(mise activate zsh)"\n' >> /etc/zsh/zshrc
+    printf "eval \"\$(mise activate bash)\"\n" >> /etc/bash.bashrc && \
+    printf "eval \"\$(mise activate zsh)\"\n" >> /etc/zsh/zshrc
 
 USER ${USERNAME}
 WORKDIR ${WORKSPACE}

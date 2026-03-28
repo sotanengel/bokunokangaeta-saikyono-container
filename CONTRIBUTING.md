@@ -17,6 +17,7 @@
 ./scripts/check-container-engines.sh
 ./scripts/audit-host-security.sh
 ./scripts/lint-local.sh
+./scripts/run-pre-commit.sh
 make build
 make smoke
 make polyglot-smoke POLYGLOT_GROUP=core

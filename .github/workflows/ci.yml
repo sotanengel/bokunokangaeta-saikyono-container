@@ -34,7 +34,7 @@ jobs:
         run: yamllint .
 
       - name: Markdownlint
-        run: npx --yes markdownlint-cli@0.39 $(git ls-files '*.md')
+        run: npx --yes markdownlint-cli@0.48.0 $(git ls-files '*.md')
 
       - name: Actionlint
         run: docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:latest

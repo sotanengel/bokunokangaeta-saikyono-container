@@ -53,7 +53,7 @@ if command -v npx >/dev/null 2>&1; then
     markdown_files+=("${file}")
   done < <(git ls-files '*.md')
   if [[ ${#markdown_files[@]} -gt 0 ]]; then
-    npx --yes markdownlint-cli@0.39 "${markdown_files[@]}"
+    npx --yes markdownlint-cli@0.48.0 "${markdown_files[@]}"
   fi
 else
   printf '%s\n' "npx not found; skipping Markdown lint." >&2

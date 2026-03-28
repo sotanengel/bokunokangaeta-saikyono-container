@@ -4,7 +4,7 @@ POLYGLOT_GROUP ?= all
 AGENT_SMOKE ?= all
 EXPORT_DIR ?= dist/image-artifacts
 
-.PHONY: build shell shell-online compose-shell compose-shell-online doctor doctor-host audit-host-security lint bootstrap-core bootstrap-polyglot polyglot-smoke install-agents agent-smoke install-host-tools-macos install-host-tools-linux start-podman-machine-macos repair-podman-machine-macos export-image-artifacts agent smoke
+.PHONY: build shell shell-online compose-shell compose-shell-online doctor doctor-host audit-host-security lint pre-commit install-pre-commit-hook bootstrap-core bootstrap-polyglot polyglot-smoke install-agents agent-smoke install-host-tools-macos install-host-tools-linux start-podman-machine-macos repair-podman-machine-macos export-image-artifacts agent smoke
 
 build:
 	./scripts/build-image.sh --image "$(IMAGE)"
@@ -32,6 +32,12 @@ audit-host-security:
 
 lint:
 	./scripts/lint-local.sh
+
+pre-commit:
+	./scripts/run-pre-commit.sh
+
+install-pre-commit-hook:
+	./scripts/run-pre-commit.sh install
 
 bootstrap-core:
 	./scripts/run-sandbox.sh --image "$(IMAGE)" --online -- bootstrap-languages --core
