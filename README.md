@@ -10,29 +10,46 @@ AIエージェントに自動実装を任せるための、安全寄りなポリ
 - Python と Node.js はすぐ使え、追加言語は `mise` で段階的に展開できる
 - CI/CD で lint、ビルド、スモークテスト、脆弱性検査、シークレット検査を回す
 
-## クイックスタート
+## はじめ方
+
+`make` は必須ではありません。このリポジトリの実体は `scripts/*.sh` で、`Makefile` はよく使うコマンドの省略形です。`make` が無い環境では、下の script をそのまま実行してください。
+
+### 最初に覚える 5 つ
+
+1. 前提確認
 
 ```bash
-make install-host-tools-macos
-make install-host-tools-linux
-make start-podman-machine-macos
-make doctor
-make doctor-host
-make audit-host-security
-make lint
-make pre-commit
-make build
-make shell
-make shell-online
-make bootstrap-polyglot
-make polyglot-smoke
-make install-agents
-make agent-smoke
-make export-image-artifacts
-make smoke
+./scripts/check-prereqs.sh
+./scripts/check-container-engines.sh
 ```
 
-安全寄りのデフォルトは `make shell` です。ネットワークを使う依存解決やセットアップだけ `make shell-online` を使い、通常の生成と検証はオフラインで回す想定です。
+1. イメージを build
+
+```bash
+./scripts/build-image.sh --image ai-agent-sandbox:latest
+```
+
+1. まずはオフライン既定で入る
+
+```bash
+./scripts/run-sandbox.sh --image ai-agent-sandbox:latest
+```
+
+1. 依存取得が必要なときだけ online にする
+
+```bash
+./scripts/run-sandbox.sh --image ai-agent-sandbox:latest --online --reason "install dependencies"
+```
+
+1. 最低限の確認を回す
+
+```bash
+IMAGE=ai-agent-sandbox:latest ./scripts/smoke-test.sh
+```
+
+`make` を使うなら、対応する省略形は `make doctor`、`make doctor-host`、`make build`、`make shell`、`make shell-online`、`make smoke` です。
+
+安全寄りのデフォルトは `./scripts/run-sandbox.sh --image ai-agent-sandbox:latest` です。ネットワークを使う依存解決やセットアップだけ `--online` を付け、通常の生成と検証はオフラインで回す想定です。
 
 ## 前提条件
 
@@ -40,13 +57,15 @@ make smoke
 - `python3`
 - `git`
 
-まず `make doctor` で前提を確認できます。
+まず `./scripts/check-prereqs.sh` で前提を確認できます。`make doctor` はこのショートカットです。
 
 macOS で Podman と Docker CLI を未導入の状態から入れる場合は、次を使えます。
 
 ```bash
-make install-host-tools-macos
+./scripts/install-host-tools-macos.sh --write-shell-profile
 ```
+
+`make install-host-tools-macos` でも同じ処理を呼べます。
 
 このターゲットは次を行います。
 
@@ -60,15 +79,15 @@ make install-host-tools-macos
 自動起動が不安定な host では、次の明示起動ヘルパーを使えます。Codex などの非対話セッションで `podman machine start` がぶら下がる環境では、必要に応じて macOS のユーザーセッション側で起動を引き受けます。
 
 ```bash
-make start-podman-machine-macos
+./scripts/start-podman-machine-macos.sh
 ```
 
 Podman machine がホスト事情で起動しない場合でも、この installer 自体は Docker 利用を継続できる状態で完了します。Podman 側だけ後から補修したいときは次を使えます。
 
 ```bash
-make start-podman-machine-macos
-make repair-podman-machine-macos
-make doctor-host
+./scripts/start-podman-machine-macos.sh
+./scripts/repair-podman-machine-macos.sh
+./scripts/check-container-engines.sh
 ```
 
 `docker` は Docker Desktop が ready ならそのまま使い、Docker 側が unavailable な場合だけ Podman の API ソケットへ退避できる構成です。`docker compose` プラグインまでは入れないため、Compose 実行は `podman-compose` か Podman Compose を使う前提です。
@@ -133,25 +152,25 @@ make doctor-host
 
 ## 使い分け
 
-- 日常の自動実装ループ: `make shell`
-- 依存解決や言語追加: `make shell-online`
-- Compose で起動: `make compose-shell`
-- Compose でオンライン起動: `make compose-shell-online`
-- 前提確認: `make doctor`
-- ホスト engine 診断: `make doctor-host`
-- ホスト権限の棚卸し: `make audit-host-security`
-- macOS ホストへエンジン導入: `make install-host-tools-macos`
-- Linux ホストへエンジン導入: `make install-host-tools-linux`
-- macOS Podman machine 起動: `make start-podman-machine-macos`
-- macOS Podman machine 補修: `make repair-podman-machine-macos`
-- ローカル静的チェック: `make lint`
-- commit 前の総合チェック: `make pre-commit`
+- 日常の自動実装ループ: `./scripts/run-sandbox.sh --image ai-agent-sandbox:latest` (`make shell`)
+- 依存解決や言語追加: `./scripts/run-sandbox.sh --image ai-agent-sandbox:latest --online --reason "bootstrap"` (`make shell-online`)
+- Compose で起動: `./scripts/compose-shell.sh` (`make compose-shell`)
+- Compose でオンライン起動: `./scripts/compose-shell.sh --online --reason "bootstrap"` (`make compose-shell-online`)
+- 前提確認: `./scripts/check-prereqs.sh` (`make doctor`)
+- ホスト engine 診断: `./scripts/check-container-engines.sh` (`make doctor-host`)
+- ホスト権限の棚卸し: `./scripts/audit-host-security.sh` (`make audit-host-security`)
+- macOS ホストへエンジン導入: `./scripts/install-host-tools-macos.sh --write-shell-profile` (`make install-host-tools-macos`)
+- Linux ホストへエンジン導入: `./scripts/install-host-tools-linux.sh` (`make install-host-tools-linux`)
+- macOS Podman machine 起動: `./scripts/start-podman-machine-macos.sh` (`make start-podman-machine-macos`)
+- macOS Podman machine 補修: `./scripts/repair-podman-machine-macos.sh` (`make repair-podman-machine-macos`)
+- ローカル静的チェック: `./scripts/lint-local.sh` (`make lint`)
+- commit 前の総合チェック: `./scripts/run-pre-commit.sh` (`make pre-commit`)
 - 実行設定の静的確認: `./scripts/check-sandbox-runtime-config.sh`
-- 多言語 smoke: `make polyglot-smoke POLYGLOT_GROUP=core`
-- エージェント smoke: `make agent-smoke AGENT_SMOKE=codex`
-- archive と checksum の出力: `make export-image-artifacts`
-- 特定エージェントを起動: `make agent AGENT=codex`
-- CI 相当の最低確認: `make smoke`
+- 多言語 smoke: `./scripts/polyglot-smoke-test.sh --image ai-agent-sandbox:latest --group core` (`make polyglot-smoke POLYGLOT_GROUP=core`)
+- エージェント smoke: `./scripts/agent-smoke-test.sh --image ai-agent-sandbox:latest --agent codex` (`make agent-smoke AGENT_SMOKE=codex`)
+- archive と checksum の出力: `./scripts/export-image-artifacts.sh --image ai-agent-sandbox:latest --output-dir dist/image-artifacts` (`make export-image-artifacts`)
+- 特定エージェントを起動: `./scripts/run-sandbox.sh --image ai-agent-sandbox:latest --agent codex` (`make agent AGENT=codex`)
+- CI 相当の最低確認: `IMAGE=ai-agent-sandbox:latest ./scripts/smoke-test.sh` (`make smoke`)
 
 ## 注意
 
@@ -163,6 +182,7 @@ make doctor-host
 - `export-image-artifacts` の checksum 生成は `sha256sum` を優先し、ない host では `shasum -a 256` を使います
 - Dependabot の version update も 7 日 cooldown を入れ、リリース直後の更新を遅延させます
 - commit 前チェックは `make install-pre-commit-hook` で hook 登録できます
+- `Makefile` は便利コマンド集であって必須ではありません。`make` が無い環境では `scripts/*.sh` を直接使ってください
 - `run-sandbox.sh --dry-run` と `compose-shell.sh --dry-run` で engine なしでも runtime 設定を確認できます
 - CI は多言語 smoke、エージェント smoke、SBOM 生成、checksum 署名まで回します
 - `.sandbox/` はローカル専用の作業領域として `.gitignore` しています
