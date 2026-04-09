@@ -1,2 +1,6 @@
 [tool.uv]
 exclude-newer = "1 week"
+
+[[tool.uv.index]]
+url = "https://pypi.flatt.tech/simple/"
+default = true
