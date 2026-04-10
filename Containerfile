@@ -39,7 +39,6 @@ RUN apt-get update && \
         pkg-config \
         procps \
         python3 \
-        python3-pip \
         python3-venv \
         rsync \
         tini \
@@ -70,7 +69,7 @@ RUN existing_group="$(getent group "${USER_GID}" | cut -d: -f1 || true)" && \
     mkdir -p "${WORKSPACE}" "${HOME}/.local/bin" "${HOME}/.cache" "${HOME}/.config" && \
     chown -R "${USERNAME}:${USER_GID}" "${WORKSPACE}" "${HOME}"
 
-RUN python3 -m pip install --no-cache-dir --break-system-packages "uv==${UV_VERSION}" && \
+RUN curl -LsSf "https://astral.sh/uv/${UV_VERSION}/install.sh" | UV_INSTALL_DIR=/usr/local/bin sh && \
     curl -fsSL https://mise.run | MISE_INSTALL_PATH=/usr/local/bin/mise sh && \
     corepack enable
 

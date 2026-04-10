@@ -10,6 +10,7 @@
     "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached"
   ],
   "runArgs": [
+    "--read-only",
     "--cap-drop=ALL",
     "--security-opt=no-new-privileges",
     "--pids-limit=512",
