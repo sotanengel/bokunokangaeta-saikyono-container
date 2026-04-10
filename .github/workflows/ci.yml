@@ -18,37 +18,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
 
-      - name: Setup Node.js
-        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f  # v6.3.0
-        with:
-          node-version: "22"
-
       - name: Setup Python
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
         with:
           python-version: "3.12"
 
-      - name: Install lint tools
+      - name: Run pre-commit
         run: |
-          python -m pip install --upgrade pip yamllint
-          sudo apt-get update
-          sudo apt-get install -y shellcheck
-
-      - name: Shellcheck
-        run: |
-          mapfile -t shell_files < <(git ls-files 'scripts/*.sh')
-          shellcheck "${shell_files[@]}"
-
-      - name: Yamllint
-        run: yamllint .
-
-      - name: Markdownlint
-        run: |
-          mapfile -t markdown_files < <(git ls-files '*.md')
-          npx --yes markdownlint-cli@0.48.0 "${markdown_files[@]}"
-
-      - name: Actionlint
-        run: docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.11
+          pip install pre-commit
+          pre-commit run --all-files
 
   build-and-smoke:
     runs-on: ubuntu-latest
