@@ -1,0 +1,5 @@
+# picomatch ReDoS (CVE-2026-33671)
+# node:22-bookworm-slim base image bundles npm with picomatch 4.0.3.
+# Fixed in picomatch 4.0.4, but the Node.js base image has not yet
+# updated npm. Remove this entry once the base image includes the fix.
+CVE-2026-33671
