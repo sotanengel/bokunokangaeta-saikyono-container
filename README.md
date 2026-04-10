@@ -20,34 +20,34 @@ AI エージェント用の安全寄り開発コンテナ基盤です。Podman/D
 
 1. 前提確認
 
-```bash
-./scripts/check-prereqs.sh
-./scripts/check-container-engines.sh
-```
+   ```bash
+   ./scripts/check-prereqs.sh
+   ./scripts/check-container-engines.sh
+   ```
 
-1. イメージを build
+2. イメージを build
 
-```bash
-./scripts/build-image.sh --image ai-agent-sandbox:latest
-```
+   ```bash
+   ./scripts/build-image.sh --image ai-agent-sandbox:latest
+   ```
 
-1. まずはオフラインで入る
+3. まずはオフラインで入る
 
-```bash
-./scripts/run-sandbox.sh --image ai-agent-sandbox:latest
-```
+   ```bash
+   ./scripts/run-sandbox.sh --image ai-agent-sandbox:latest
+   ```
 
-1. 依存取得が必要なときだけ online
+4. 依存取得が必要なときだけ online
 
-```bash
-./scripts/run-sandbox.sh --image ai-agent-sandbox:latest --online --reason "install dependencies"
-```
+   ```bash
+   ./scripts/run-sandbox.sh --image ai-agent-sandbox:latest --online --reason "install dependencies"
+   ```
 
-1. 最低限の確認
+5. 最低限の確認
 
-```bash
-IMAGE=ai-agent-sandbox:latest ./scripts/smoke-test.sh
-```
+   ```bash
+   IMAGE=ai-agent-sandbox:latest ./scripts/smoke-test.sh
+   ```
 
 ## エンジンが無い場合
 
